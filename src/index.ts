@@ -9,16 +9,11 @@ const config = {
   dev: false, // Data collection
 };
 
-const email_list = [
-  "rfcdrive.com",
-  "gonetor.com",
-  "zlorkun.com",
-  "somelora.com",
-];
+const email_list = ["vvatxiy.com"];
 
 const gen = async () => {
   let browser = await playwright.firefox.launch({
-    headless: true,
+    headless: false,
     // no bypass <3
   });
   try {
