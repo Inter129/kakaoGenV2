@@ -1,7 +1,7 @@
 data
-data/
+node_modules
 
 kakao.txt
-kcaptcha.txt
-kkutu.txt
 proxy.txt
+
+expresso.exe
