@@ -5,73 +5,7 @@ import { execFileSync } from "child_process";
 
 const config = {
   password: "@TestPassword123",
-  expresso: true, // If you want to use expresso then make sure to move the expresso.exe to the root of the project
-};
-
-const fkn = [
-  "꼬마",
-  "용감한",
-  "행복한",
-  "멋진",
-  "똑똑한",
-  "귀여운",
-  "멋진",
-  "행운의",
-];
-
-const skn = [
-  "요네",
-  "냥이",
-  "토끼",
-  "곰",
-  "사자",
-  "호랑이",
-  "코끼리",
-  "돼지",
-  "쥐",
-  "말",
-  "양",
-  "개",
-  "고양이",
-  "거북이",
-  "원숭이",
-  "뱀",
-  "독수리",
-  "호랑이",
-  "사슴",
-  "코끼리",
-  "코뿔소",
-  "기린",
-  "악어",
-  "오리",
-  "거위",
-  "타조",
-  "참새",
-  "독수리",
-  "코끼리",
-  "코뿔소",
-  "기린",
-  "악어",
-  "오리",
-  "거위",
-  "타조",
-  "참새",
-  "독수리",
-  "호랑이",
-  "사슴",
-  "코끼리",
-  "코뿔소",
-  "기린",
-  "악어",
-  "오리",
-  "거위",
-];
-
-const krNickGen = () => {
-  return (
-    fkn[Math.floor(Math.random() * fkn.length)] +
-    skn[Math.floor(Math.random() * skn.length)]
-  );
+  expresso: false, // If you want to use expresso then make sure to move the expresso.exe to the root of the project
 };
 
 const gen = async () => {
@@ -246,6 +180,7 @@ const gen = async () => {
     await page.evaluate(`document.querySelector("#agreeAll").click()`);
     await page.click("#acceptButton");
     await page.waitForLoadState("networkidle");
+    // TODO: kakao mail register
   } catch (e) {
     try {
       //browser.close();
