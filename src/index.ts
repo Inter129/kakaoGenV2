@@ -6,23 +6,41 @@ import { execFileSync } from "child_process";
 const config = {
   password: "@TestPassword123",
   expresso: false, // If you want to use expresso then make sure to move the expresso.exe to the root of the project
+  dev: false, // Data collection
 };
+
+const email_list = [
+  "rfcdrive.com",
+  "gonetor.com",
+  "zlorkun.com",
+  "somelora.com",
+];
 
 const gen = async () => {
   let browser = await playwright.firefox.launch({
-    headless: false,
+    headless: true,
     // no bypass <3
   });
   try {
+    if (config.expresso) {
+      execFileSync("expresso.exe", ["connect", "-c", "--random", "Japan"]);
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+
     let context = await browser.newContext({
       bypassCSP: true,
       ignoreHTTPSErrors: true,
     });
     let page = await context.newPage();
-    let mdata = await axios.get(
-      "http://internxt.com/api/temp-mail/create-email"
-    ); // Is internxt.com down?
-    let email = mdata.data.address;
+    let mdata = await axios.post(
+      "https://api.internal.temp-mail.io/api/v3/email/new",
+      {
+        name: Math.random().toString(32).substr(4),
+        domain: email_list[Math.floor(email_list.length * Math.random())],
+      }
+    );
+    console.log(mdata.data);
+    let email = mdata.data.email;
     let mailToken = mdata.data.token;
     let cframe: playwright.FrameLocator | null = null;
     await page.goto(
@@ -30,11 +48,7 @@ const gen = async () => {
     );
 
     const router = async (r: playwright.Route) => {
-      if (
-        r.request().url().includes("googleads") ||
-        r.request().url().includes("tiara")
-      )
-        r.abort();
+      if (r.request().url().includes("googleads")) r.abort();
       else r.continue();
     };
     await page.route("**", router);
@@ -48,13 +62,6 @@ const gen = async () => {
                 timeout: 1000 * 10,
               });
             } catch (e) {
-              if (config.expresso)
-                execFileSync("expresso.exe", [
-                  "connect",
-                  "-c",
-                  "--random",
-                  "Japan",
-                ]);
               console.error("Cannot find captcha (ip ban?)");
               return browser.close();
             }
@@ -62,8 +69,9 @@ const gen = async () => {
         }
         if (!res.url().includes("https://dkaptcha.kakao.com/dkaptcha/quiz/"))
           return;
+        await new Promise((r) => setTimeout(r, 500));
         let data = await res.text();
-        if (!data.includes("the following icon"))
+        if (!data.includes("the following icon") && config.dev)
           fs.writeFileSync(
             `./data/${
               Date.now().toString() + Math.random().toString(32).substr(5)
@@ -81,6 +89,8 @@ const gen = async () => {
           if (d == "Pharm") d = "Pharmacy";
           if (d == "Bank") d = "IBK Bank";
           console.log(d);
+          if (d.length <= 2)
+            return await cframe?.locator("#btn_dkaptcha_reset").click();
           await cframe?.locator("#inpDkaptcha").fill(d);
           await cframe?.locator("#inner_submit_btn").click();
         } else if (data.includes("following place and fill in")) {
@@ -100,7 +110,7 @@ const gen = async () => {
           if (sam == "IBK_nk") ans = "Ba";
           if (sam == "G_25") ans = "S";
           if (sam == "IBKB_k") ans = "an";
-          if (sam == "GS2") ans = "5";
+          if (sam == "GS2_") ans = "5";
           if (sam == "Starbuc_s") ans = "k";
           if (sam == "KBB_nk") ans = "a";
           if (sam == "C_fe") ans = "o";
@@ -112,13 +122,17 @@ const gen = async () => {
           if (sam == "Dayc_re") ans = "a";
           if (sam == "Dayca_e") ans = "r";
           if (sam == "IB_ank") ans = "K";
+          if (sam == "Daycar_") ans = "e";
+          if (sam == "GS_5") ans = "2";
+
           console.log(sam, ans);
 
           if (ans != "") {
             await cframe?.locator("#inpDkaptcha").fill(ans);
             await cframe?.locator("#inner_submit_btn").click();
           } else {
-            fs.appendFileSync("kcaptcha.txt", sam + ":" + img + "\n");
+            if (config.dev)
+              fs.appendFileSync("kcaptcha.txt", sam + ":" + img + "\n");
             await cframe?.locator("#btn_dkaptcha_reset").click();
           }
         } else {
@@ -138,20 +152,24 @@ const gen = async () => {
     cframe = page.frameLocator("iframe");
     page.waitForLoadState("domcontentloaded");
 
-    let eCode = "";
-    while (eCode == "") {
-      await new Promise((r) => setTimeout(r, 200));
+    let eCode = "",
+      tries = 0;
+    while (eCode == "" && tries < 200) {
+      await new Promise((r) => setTimeout(r, 500));
       let dmx = await axios.get(
-        "https://internxt.com/api/temp-mail/get-inbox?token=" + mailToken
+        `https://api.internal.temp-mail.io/api/v3/email/${email}/messages`
       );
-      if (dmx.data.emails.length > 0) {
-        eCode = dmx.data.emails[0].html
-          .split(`font-size:14px;font-weight:bold;word-break:break-all" >`)[1]
-          .split("</td>")[0];
+      if (dmx.data.length > 0) {
+        eCode = dmx.data[0].body_text
+          .split("Verification Code ")[1]
+          .split("\n")[0];
+        break;
       }
+      console.log(dmx.data);
+      tries++;
     }
-    await page.fill("#email_passcode--10", eCode);
     console.log(eCode);
+    await page.fill(`input[name="email_passcode"]`, eCode);
     await page.click(".submit");
     await page.fill(`input[name="new_password"]`, config.password);
     await page.fill(`input[name="password_confirm"]`, config.password);
@@ -175,12 +193,26 @@ const gen = async () => {
       .click();
     await page.click(".submit");
     await page.getByText("Get Started").click();
-    await page.waitForSelector("#acceptButton");
-    await page.waitForLoadState("networkidle");
-    await page.evaluate(`document.querySelector("#agreeAll").click()`);
-    await page.click("#acceptButton");
-    await page.waitForLoadState("networkidle");
-    // TODO: kakao mail register
+    await page.waitForURL(
+      "https://account.mail.kakao.com/?https%3A%2F%2Fmail.kakao.com",
+      {
+        waitUntil: "load",
+      }
+    );
+    await page.click(`button[id="btn_make_kakaomail"]`);
+    let kmail = Math.random().toString(32).substr(4);
+    await page.fill(`input[name="kakao_id"]`, kmail);
+    await page.evaluate(`document.querySelector("#rep").click()`);
+    await page.click(`button[type="submit"]`);
+    await new Promise((r) => setTimeout(r, 500));
+    await page.click("div.wrap_btn:nth-child(5) > button:nth-child(1)");
+    await new Promise((r) => setTimeout(r, 500));
+    await page.click(".complete");
+    fs.appendFileSync(
+      "kakao.txt",
+      kmail + "@kakao.com:" + config.password + "\n"
+    );
+    await browser.close();
   } catch (e) {
     try {
       //browser.close();
@@ -188,4 +220,10 @@ const gen = async () => {
   }
 };
 
-gen();
+const genT = async () => {
+  while (true) {
+    await gen();
+  }
+};
+
+genT();
