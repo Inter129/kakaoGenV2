@@ -26,9 +26,9 @@ for i in range(len(img_array)):
         # get around 3x3 pixels around the pixel
         enables = 0
         for k in range(-1, 2):
-            for l in range(-1, 2):
-                if i+k >= 0 and i+k < len(img_array) and j+l >= 0 and j+l < len(img_array[i]):
-                    enables += enablesMap[i+k][j+l]
+            for o in range(-1, 2):
+                if i+k >= 0 and i+k < len(img_array) and j+o >= 0 and j+o < len(img_array[i]):
+                    enables += enablesMap[i+k][j+o]
         if enables > 4:
             img_array[i][j] = [255, 255, 255]
         else:
