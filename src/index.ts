@@ -15,7 +15,7 @@ let trc = config.runCnt;
 const email_list = ["vvatxiy.com"];
 
 const gen = async () => {
-  let browser = await playwright.firefox.launch({
+  const browser = await playwright.firefox.launch({
     headless: false,
     // no bypass <3
   });
@@ -53,7 +53,7 @@ const gen = async () => {
     const resLis = async (res: playwright.Response) => {
       try {
         if (res.url().includes("/v2/signup/send_passcode_for_create.json")) { // Create kakao account api
-          let d = await res.json();
+          const d = await res.json();
           if (d.status == -482 || d.status == -481) { // Requiring captcha
             try {
               await cframe?.locator("#btn_dkaptcha_reset").click({
@@ -218,8 +218,7 @@ const gen = async () => {
   }
 };
 
-while (true) {
+while (trc != 0) {
   await gen();
-  if(trc == 0) break;
   trc--;
 }
