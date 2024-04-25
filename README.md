@@ -1,4 +1,5 @@
 # 카카오 계정 생성기 (Kakao Account Generator)
+[![CodeFactor](https://www.codefactor.io/repository/github/inter129/kakaogenv2/badge/main)](https://www.codefactor.io/repository/github/inter129/kakaogenv2/overview/main)
 
 ## 소개
 
@@ -10,7 +11,6 @@
 
 ## 해야할 일들 (TODO)
 
-- 카카오 메일 생성하기
 - iptime 공유기를 통한 ip 자동변경기 추가하기
 
 ## 주의 사항
