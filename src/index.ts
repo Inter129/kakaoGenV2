@@ -52,18 +52,15 @@ const gen = async () => {
     await page.route("**", router);
     const resLis = async (res: playwright.Response) => {
       try {
-        if (res.url().includes("/v2/signup/send_passcode_for_create.json")) { // Create kakao account api
-          const d = await res.json();
-          if (d.status == -482 || d.status == -481) { // Requiring captcha
-            try {
-              await cframe?.locator("#btn_dkaptcha_reset").click({
-                timeout: 1000 * 10,
-              });
-            } catch (e) {
-              console.error("Cannot find captcha (ip ban?)");
-              return browser.close();
-            }
-          }
+        const d = await res.json();
+        if (res.url().includes("/v2/signup/send_passcode_for_create.json") && (d.status == -482 || d.status == -481)) { // Create kakao account api
+          await cframe?.locator("#btn_dkaptcha_reset").click({
+            timeout: 1000 * 10,
+          }).catch(() => {
+            console.error("Cannot find captcha (ip ban?)");
+            browser.close();
+          });
+          return;
         }
         if (!res.url().includes("https://dkaptcha.kakao.com/dkaptcha/quiz/")) // Captcha iframe
           return;
@@ -71,8 +68,7 @@ const gen = async () => {
         let data = await res.text();
         if (!data.includes("the following icon") && config.dev)
           fs.writeFileSync(
-            `./data/${
-              Date.now().toString() + Math.random().toString(32).substr(5)
+            `./data/${Date.now().toString() + Math.random().toString(32).substr(5)
             }.html`,
             data
           );
@@ -137,7 +133,7 @@ const gen = async () => {
           console.log("New captcha type?");
           await cframe?.locator("#btn_dkaptcha_reset").click();
         }
-      } catch (e) {}
+      } catch (e) { }
     };
     page.on("response", resLis);
     await page.click(".submit");
@@ -213,12 +209,16 @@ const gen = async () => {
     await browser.close();
   } catch (e) {
     try {
-      //browser.close();
+      browser.close();
     } catch (e) {}
   }
 };
 
-while (trc != 0) {
-  await gen();
-  trc--;
+async function main() {
+  while (trc != 0) {
+    await gen();
+    trc--;
+  }
 }
+
+main();
