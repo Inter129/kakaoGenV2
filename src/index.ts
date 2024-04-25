@@ -7,7 +7,10 @@ const config = {
   password: "@TestPassword123",
   expresso: false, // If you want to use expresso then make sure to move the expresso.exe to the root of the project
   dev: false, // Data collection
+  runCnt: 1, // Count to run
 };
+
+let trc = config.runCnt;
 
 const email_list = ["vvatxiy.com"];
 
@@ -22,12 +25,12 @@ const gen = async () => {
       await new Promise((r) => setTimeout(r, 3000));
     }
 
-    let context = await browser.newContext({
+    const context = await browser.newContext({
       bypassCSP: true,
       ignoreHTTPSErrors: true,
     });
-    let page = await context.newPage();
-    let mdata = await axios.post(
+    const page = await context.newPage();
+    const mdata = await axios.post(
       "https://api.internal.temp-mail.io/api/v3/email/new",
       {
         name: Math.random().toString(32).substr(4),
@@ -35,8 +38,8 @@ const gen = async () => {
       }
     );
     console.log(mdata.data);
-    let email = mdata.data.email;
-    let mailToken = mdata.data.token;
+    const email = mdata.data.email;
+    const mailToken = mdata.data.token;
     let cframe: playwright.FrameLocator | null = null;
     await page.goto(
       "https://accounts.kakao.com/weblogin/create_account/?lang=en&continue=https%3A%2F%2Fmail.kakao.com#selectVerifyMethod"
@@ -49,9 +52,9 @@ const gen = async () => {
     await page.route("**", router);
     const resLis = async (res: playwright.Response) => {
       try {
-        if (res.url().includes("/v2/signup/send_passcode_for_create.json")) {
+        if (res.url().includes("/v2/signup/send_passcode_for_create.json")) { // Create kakao account api
           let d = await res.json();
-          if (d.status == -482 || d.status == -481) {
+          if (d.status == -482 || d.status == -481) { // Requiring captcha
             try {
               await cframe?.locator("#btn_dkaptcha_reset").click({
                 timeout: 1000 * 10,
@@ -62,7 +65,7 @@ const gen = async () => {
             }
           }
         }
-        if (!res.url().includes("https://dkaptcha.kakao.com/dkaptcha/quiz/"))
+        if (!res.url().includes("https://dkaptcha.kakao.com/dkaptcha/quiz/")) // Captcha iframe
           return;
         await new Promise((r) => setTimeout(r, 500));
         let data = await res.text();
@@ -74,7 +77,7 @@ const gen = async () => {
             data
           );
 
-        let img = data.split(`class="img_map" src="`)[1].split(`"`)[0];
+        const img = data.split(`class="img_map" src="`)[1].split(`"`)[0];
         if (data.includes("the following icon"))
           await cframe?.locator("#btn_dkaptcha_reset").click();
         else if (data.includes("the full name")) {
@@ -92,7 +95,7 @@ const gen = async () => {
           let ans = "";
           data = data.replace(`<span class="blank_txt">Blank</span>`, "");
           data = data.replace(`<span class="blank_txt"></span>`, "_");
-          let sam = data
+          const sam = data
             .split(`Question</strong>`)[1]
             .split(`</p>`)[0]
             .replaceAll(" ", "")
@@ -151,7 +154,7 @@ const gen = async () => {
       tries = 0;
     while (eCode == "" && tries < 200) {
       await new Promise((r) => setTimeout(r, 500));
-      let dmx = await axios.get(
+      const dmx = await axios.get(
         `https://api.internal.temp-mail.io/api/v3/email/${email}/messages`
       );
       if (dmx.data.length > 0) {
@@ -195,7 +198,7 @@ const gen = async () => {
       }
     );
     await page.click(`button[id="btn_make_kakaomail"]`);
-    let kmail = Math.random().toString(32).substr(4);
+    const kmail = Math.random().toString(32).substr(4);
     await page.fill(`input[name="kakao_id"]`, kmail);
     await page.evaluate(`document.querySelector("#rep").click()`);
     await page.click(`button[type="submit"]`);
@@ -215,10 +218,8 @@ const gen = async () => {
   }
 };
 
-const genT = async () => {
-  while (true) {
-    await gen();
-  }
-};
-
-genT();
+while (true) {
+  await gen();
+  if(trc == 0) break;
+  trc--;
+}
