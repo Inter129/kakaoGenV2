@@ -10,6 +10,12 @@ const config = {
   runCnt: 1, // Count to run
 };
 
+const constv = {
+  regUrl: "https://accounts.kakao.com/weblogin/create_account/?lang=en&continue=https%3A%2F%2Fmail.kakao.com#selectVerifyMethod",
+  regApiUrl: "/v2/signup/send_passcode_for_create.json",
+  captchaIframeUrl: "https://dkaptcha.kakao.com/dkaptcha/quiz/"
+};
+
 let trc = config.runCnt;
 
 const email_list = ["vvatxiy.com"];
@@ -17,7 +23,6 @@ const email_list = ["vvatxiy.com"];
 const gen = async () => {
   const browser = await playwright.firefox.launch({
     headless: false,
-    // no bypass <3
   });
   try {
     if (config.expresso) {
@@ -42,7 +47,7 @@ const gen = async () => {
     const mailToken = mdata.data.token;
     let cframe: playwright.FrameLocator | null = null;
     await page.goto(
-      "https://accounts.kakao.com/weblogin/create_account/?lang=en&continue=https%3A%2F%2Fmail.kakao.com#selectVerifyMethod"
+      constv.regUrl
     );
 
     const router = async (r: playwright.Route) => {
@@ -53,7 +58,7 @@ const gen = async () => {
     const resLis = async (res: playwright.Response) => {
       try {
         const d = await res.json();
-        if (res.url().includes("/v2/signup/send_passcode_for_create.json") && (d.status == -482 || d.status == -481)) { // Create kakao account api
+        if (res.url().includes(constv.regApiUrl) && (d.status == -482 || d.status == -481)) { // Create kakao account api
           await cframe?.locator("#btn_dkaptcha_reset").click({
             timeout: 1000 * 10,
           }).catch(() => {
@@ -62,7 +67,7 @@ const gen = async () => {
           });
           return;
         }
-        if (!res.url().includes("https://dkaptcha.kakao.com/dkaptcha/quiz/")) // Captcha iframe
+        if (!res.url().includes(constv.captchaIframeUrl)) // Captcha iframe
           return;
         await new Promise((r) => setTimeout(r, 500));
         let data = await res.text();
@@ -210,7 +215,7 @@ const gen = async () => {
   } catch (e) {
     try {
       browser.close();
-    } catch (e) {}
+    } catch (e) { }
   }
 };
 
